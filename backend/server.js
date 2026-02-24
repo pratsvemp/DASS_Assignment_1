@@ -26,8 +26,19 @@ const seedAdmin = async () => {
 connectDB().then(seedAdmin).catch(console.error);
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
+const rawFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+const frontendUrl = rawFrontendUrl.replace(/\/$/, ''); // Remove trailing slash if any
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl) 
+        // OR origins that match our frontend URL (ignoring trailing slashes)
+        if (!origin || origin.replace(/\/$/, '') === frontendUrl) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json());
