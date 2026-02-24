@@ -26,16 +26,27 @@ const seedAdmin = async () => {
 connectDB().then(seedAdmin).catch(console.error);
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
-const rawFrontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-const frontendUrl = rawFrontendUrl.replace(/\/$/, ''); // Remove trailing slash if any
+let frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+try {
+    const url = new URL(frontendOrigin);
+    frontendOrigin = `${url.protocol}//${url.host}`;
+} catch (e) {
+    frontendOrigin = frontendOrigin.replace(/\/+$/, '');
+}
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl) 
-        // OR origins that match our frontend URL (ignoring trailing slashes)
-        if (!origin || origin.replace(/\/$/, '') === frontendUrl) {
+        if (!origin) return callback(null, true);
+
+        const normalizedOrigin = origin.replace(/\/+$/, '');
+
+        // Match exact origin OR any vercel.app subdomain if the main one is on vercel
+        const isVercelMatch = frontendOrigin.includes('vercel.app') && normalizedOrigin.endsWith('.vercel.app');
+
+        if (normalizedOrigin === frontendOrigin || isVercelMatch) {
             callback(null, true);
         } else {
+            console.error(`CORS Blocked: Origin ${origin} does not match ${frontendOrigin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
