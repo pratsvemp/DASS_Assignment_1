@@ -80,16 +80,18 @@ The admin account is seeded automatically on first server start using `ADMIN_EMA
 
 ## Advanced Features
 
-### Tier A — QR Code Ticketing
+### Tier A — QR Scanner & Attendance Tracking
 
 Every confirmed event registration generates a unique `ticketId` (UUID) and a QR code data-URL (via the `qrcode` package). The QR stores the ticketId.
-
 - Participant receives the QR in their confirmation email and can view it on their dashboard.
 - Organiser can upload a photo of a printed QR or type a ticket ID manually in the Scan tab of Event Detail.
 - `jsqr` decodes the image client-side, then the backend validates the ticketId and marks attendance.
-- Design choice: QR generation happens server-side at payment/approval time so the client never needs to regenerate it. The data-URL is stored in the Registration document and served on demand.
+- Design choice: QR generation happens server-side at payment/approval time so the client never needs to regenerate it. The data-URL is stored in the Registration document 
+and served on demand.
+- From the Event Detail → Participants tab, the organiser can download all registrations as a CSV including custom field answers. Generated entirely client-side via a Blob URL; no server endpoint needed.
 
-### Tier A — Email Notifications (Nodemailer + SMTP)
+
+### Tier A — Merchandise Payment Approval Workflow
 
 Transactional emails are sent for:
 - Participant signup confirmation
@@ -98,33 +100,12 @@ Transactional emails are sent for:
 - Payment approval (ticket + QR)
 - Payment rejection
 
-Emails are HTML-templated in `emailService.js`. Gmail SMTP with an App Password is used so no paid service is required. Nodemailer is preferred over services like SendGrid because it needs zero API keys for self-hosted SMTP.
-
-### Tier A — hCaptcha on Login and Signup
-
-Login and signup both require an hCaptcha challenge. The test site key (`10000000-ffff-ffff-ffff-000000000001`) is used in development so the widget renders and can be bypassed. In `NODE_ENV=development`, the backend skips verification entirely. In production, it calls the hCaptcha siteverify API with the real secret.
-
-### Tier B — Custom Registration Forms
-
-Organisers define custom form fields (text, number, checkbox, dropdown, multiple-choice) per event. The schema is stored as a `customFields` array on the Event model. On registration, participants fill these fields and their answers are stored per-registration. The organiser sees all answers in the participant list and in CSV export.
-
-### Tier B — Merchandise Events
+Emails are HTML-templated in `emailService.js`. Gmail SMTP with an App Password is used so no paid service is required. Nodemailer is preferred over services like SendGrid because it needs zero API keys for self-hosted SMTP. Organisers define custom form fields (text, number, checkbox, dropdown, multiple-choice) per event. The schema is stored as a `customFields` array on the Event model. On registration, participants fill these fields and their answers are stored per-registration. The organiser sees all answers in the participant list and in CSV export.
 
 A separate event type with stock tracking. Each purchase creates a `Registration` with `status: Pending`. The organiser reviews and approves/rejects payment after seeing the participant's payment proof upload. On approval a QR code is generated identically to normal events.
 
-### Tier B — CSV Export
 
-From the Event Detail → Participants tab, the organiser can download all registrations as a CSV including custom field answers. Generated entirely client-side via a Blob URL; no server endpoint needed.
-
-### Tier B — Discord Webhook Integration
-
-Organisers can store a Discord webhook URL on their profile. When a new event is published, the backend posts an embed message to that webhook with event name, type, date, and registration link. Implemented via a simple `axios.post` in the event publish controller.
-
-### Tier B — Manual Attendance Override
-
-Organisers can mark a participant as attended from the Attendance tab without scanning their QR, providing a mandatory reason note. The override is logged with the reason for audit purposes.
-
-### Tier C — Organiser Password Reset Workflow
+### Tier B — Organiser Password Reset Workflow
 
 Organiser cannot self-serve reset their password (they don't have a recovery email separate from login). Instead:
 
@@ -136,10 +117,14 @@ Organiser cannot self-serve reset their password (they don't have a recovery ema
 
 Design choice: the password is generated server-side and shown to the admin only once, similar to how initial organiser credentials are shared, keeping a consistent admin-mediated credential flow.
 
+### Tier C — Bot Protection
+
+Login and signup both include hCaptcha integration to prevent automated bot attacks. The backend verifies the captcha token via the hCaptcha siteverify API.
+- The test site key (`10000000-ffff-ffff-ffff-000000000001`) is used for local development and evaluation.
+- The backend includes an environment-level override (`SKIP_CAPTCHA=true`) to allow seamless testing and evaluation in production environments without requiring real captcha solving.
+
 ---
-
 ## Project Structure
-
 ```
 backend/
   server.js              entry point, middleware, route wiring
