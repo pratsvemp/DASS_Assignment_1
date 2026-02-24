@@ -6,7 +6,24 @@ const connectDB = require('./src/config/database');
 dotenv.config();
 
 const app = express();
-connectDB();
+
+// ─── Seed admin account if it doesn't exist ───────────────────────────────────
+const seedAdmin = async () => {
+    const User = require('./src/models/User');
+    const Admin = require('./src/models/Admin');
+    const existing = await User.findOne({ role: 'admin' });
+    if (!existing) {
+        await Admin.create({
+            email: process.env.ADMIN_EMAIL || 'admin@felicity.com',
+            password: process.env.ADMIN_PASSWORD || 'Admin@123456',
+            role: 'admin',
+            adminName: 'Super Admin',
+        });
+        console.log('Admin account seeded →', process.env.ADMIN_EMAIL);
+    }
+};
+
+connectDB().then(seedAdmin).catch(console.error);
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors({

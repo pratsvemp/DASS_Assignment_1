@@ -6,8 +6,8 @@ const { generateToken } = require('../utils/jwt');
 
 // ─── hCaptcha verification ────────────────────────────────────────────────────
 const verifyCaptcha = async (token) => {
-    // In development, skip captcha entirely (test keys don't need real tokens)
-    if (process.env.NODE_ENV === 'development') return true;
+    // Skip in development or when explicitly disabled (e.g. for evaluation/testing)
+    if (process.env.NODE_ENV === 'development' || process.env.SKIP_CAPTCHA === 'true') return true;
     if (!token) return false;
     try {
         const params = new URLSearchParams({
