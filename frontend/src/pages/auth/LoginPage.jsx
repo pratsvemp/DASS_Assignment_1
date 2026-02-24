@@ -1,15 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-
-// hCaptcha test site key — works without a real account in dev
-const HCAPTCHA_SITE_KEY = '10000000-ffff-ffff-ffff-000000000001';
 
 export default function LoginPage() {
     const { register, handleSubmit, formState: { errors } } = useForm();
@@ -18,8 +14,6 @@ export default function LoginPage() {
     const location = useLocation();
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [captchaToken, setCaptchaToken] = useState('');
-    const captchaRef = useRef(null);
 
     const from = location.state?.from?.pathname;
     const roleDash = { participant: '/dashboard', organizer: '/organizer/dashboard', admin: '/admin/dashboard' };
@@ -28,13 +22,11 @@ export default function LoginPage() {
         setLoading(true);
         setError('');
         try {
-            const res = await authAPI.login({ ...data, captchaToken });
+            const res = await authAPI.login({ ...data, captchaToken: '' });
             login(res.data.token, res.data.user);
             navigate(from || roleDash[res.data.user.role] || '/dashboard', { replace: true });
         } catch (err) {
             setError(err.response?.data?.message || 'Login failed. Please try again.');
-            captchaRef.current?.resetCaptcha();
-            setCaptchaToken('');
         } finally {
             setLoading(false);
         }
@@ -83,15 +75,7 @@ export default function LoginPage() {
                                 {errors.password && <p className="mt-1 text-xs text-destructive">{errors.password.message}</p>}
                             </div>
 
-                            {/* hCaptcha widget */}
-                            <div className="flex justify-center">
-                                <HCaptcha
-                                    sitekey={HCAPTCHA_SITE_KEY}
-                                    onVerify={(token) => setCaptchaToken(token)}
-                                    onExpire={() => setCaptchaToken('')}
-                                    ref={captchaRef}
-                                />
-                            </div>
+
 
                             <Button
                                 type="submit"

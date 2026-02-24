@@ -1,15 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import HCaptcha from '@hcaptcha/react-hcaptcha';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../services/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-
-// hCaptcha test site key — works without a real account in dev
-const HCAPTCHA_SITE_KEY = '10000000-ffff-ffff-ffff-000000000001';
 
 const selectCls = 'w-full pixel-font text-xs bg-background text-foreground p-2 shadow-[var(--pixel-box-shadow)] box-shadow-margin outline-none border-none';
 
@@ -19,8 +15,6 @@ export default function SignupPage() {
     const navigate = useNavigate();
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [captchaToken, setCaptchaToken] = useState('');
-    const captchaRef = useRef(null);
 
     const participantType = watch('participantType');
 
@@ -28,13 +22,11 @@ export default function SignupPage() {
         setLoading(true);
         setError('');
         try {
-            const res = await authAPI.signup({ ...data, captchaToken });
+            const res = await authAPI.signup({ ...data, captchaToken: '' });
             login(res.data.token, res.data.user);
             navigate('/onboarding', { replace: true });
         } catch (err) {
             setError(err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Signup failed.');
-            captchaRef.current?.resetCaptcha();
-            setCaptchaToken('');
         } finally {
             setLoading(false);
         }
@@ -117,15 +109,7 @@ export default function SignupPage() {
                                 {errors.contactNumber && <p className="mt-1 text-xs text-destructive">{errors.contactNumber.message}</p>}
                             </div>
 
-                            {/* hCaptcha widget */}
-                            <div className="flex justify-center pt-1">
-                                <HCaptcha
-                                    sitekey={HCAPTCHA_SITE_KEY}
-                                    onVerify={(token) => setCaptchaToken(token)}
-                                    onExpire={() => setCaptchaToken('')}
-                                    ref={captchaRef}
-                                />
-                            </div>
+
 
                             <Button type="submit" disabled={loading} className="w-full" size="lg">
                                 {loading ? 'Creating account…' : 'Create account'}
