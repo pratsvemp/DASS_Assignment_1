@@ -1,0 +1,2 @@
+Frontend: https://dass-assignment-1-gilt.vercel.app
+Backend: https://dass-assignment-1-8pwy.onrender.com
